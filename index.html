@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHROMO·VISION · accurate color blindness simulator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* light/dark themes */
+    body.light {
+      background: #e8f0fe;
+      background-image: radial-gradient(circle at 20% 30%, #cfdef5, #eef5ff);
+      color: #0b1f2c;
+    }
+    body.light .app {
+      background: rgba(230, 240, 255, 0.7);
+      border: 1px solid #a0b8d0;
+      box-shadow: 0 20px 40px -12px #5f7c9f;
+    }
+    body.light .sidebar,
+    body.light .viewport,
+    body.light .insight-panel {
+      background: rgba(220, 235, 250, 0.7);
+      border-color: #9cb4d3;
+    }
+    body.light .btn {
+      background: #d0e2ff;
+      border-color: #6889b0;
+      color: #11212e;
+    }
+    body.light .logo {
+      background: linear-gradient(130deg, #1d4b77, #0a6a9c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* dark (default) */
+    body {
+      background: #0b0f17;
+      background-image: radial-gradient(circle at 15% 30%, #1a2538 0%, #0a0e17 90%);
+      min-height: 100vh;
+      padding: 1.8rem;
+      color: #eef5ff;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: rgba(18, 25, 40, 0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(76, 140, 210, 0.25);
+      border-radius: 2.5rem;
+      box-shadow: 0 30px 60px -15px rgba(0, 20, 40, 0.8), 0 0 0 1px rgba(100, 180, 255, 0.1) inset;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 2.2rem;
+      background: rgba(8, 20, 36, 0.7);
+      border-bottom: 1px solid rgba(8, 145, 200, 0.4);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-weight: 600;
+      font-size: 1.7rem;
+      background: linear-gradient(130deg, #a6e0ff, #7bc8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      background: rgba(8, 145, 200, 0.2);
+      border: 1px solid #2f8db0;
+      -webkit-text-fill-color: white;
+      color: white;
+      font-size: 0.9rem;
+      padding: 0.3rem 1rem;
+      border-radius: 60px;
+      backdrop-filter: blur(4px);
+    }
+
+    .tools-header {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      background: rgba(20, 35, 55, 0.8);
+      border: 1px solid #314a6f;
+      padding: 0.5rem 1.4rem;
+      border-radius: 40px;
+      font-weight: 500;
+      color: #d0e6ff;
+      cursor: pointer;
+      transition: 0.2s;
+      backdrop-filter: blur(8px);
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-primary {
+      background: #0891b2;
+      border-color: #5fd0ff;
+      color: white;
+      box-shadow: 0 8px 20px -6px #0891b2;
+    }
+
+    .btn-primary:hover {
+      background: #1fa6d0;
+      border-color: #a0e5ff;
+    }
+
+    .btn:hover {
+      background: #1f3450;
+      border-color: #5f8fd0;
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: row;
+      padding: 1.8rem;
+      gap: 1.8rem;
+    }
+
+    .sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      background: rgba(12, 22, 35, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1.6rem;
+      border: 1px solid rgba(50, 130, 200, 0.3);
+      box-shadow: 0 15px 30px -20px black;
+    }
+
+    .upload-area {
+      border: 2px dashed #2e577a;
+      border-radius: 1.8rem;
+      padding: 1.4rem 1rem;
+      text-align: center;
+      background: rgba(0, 20, 40, 0.5);
+      transition: 0.2s;
+      cursor: pointer;
+    }
+
+    .upload-area.drag-over {
+      border-color: #40c0ff;
+      background: rgba(0, 160, 255, 0.1);
+      box-shadow: 0 0 20px #0891b240;
+    }
+
+    .upload-icon {
+      font-size: 2.6rem;
+      filter: drop-shadow(0 0 8px cyan);
+    }
+
+    .sample-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin: 1.5rem 0;
+    }
+
+    .sample-thumb {
+      width: 50px;
+      height: 50px;
+      background: #142c42;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      border: 1px solid #2f6080;
+      transition: 0.2s;
+      cursor: pointer;
+    }
+
+    .sample-thumb:hover {
+      border-color: #40c8ff;
+      transform: scale(1.1) translateY(-3px);
+      box-shadow: 0 0 18px #0891b2;
+    }
+
+    [data-tooltip] {
+      position: relative;
+      cursor: help;
+    }
+    [data-tooltip]:before {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #103350;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      border: 1px solid #3d86b4;
+      box-shadow: 0 0 15px #0891b2;
+      pointer-events: none;
+      opacity: 0;
+      transition: 0.15s;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    [data-tooltip]:hover:before {
+      opacity: 1;
+      bottom: 130%;
+    }
+
+    .cvd-type {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.8rem;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 0.15s;
+      border: 1px solid transparent;
+    }
+    .cvd-type:hover {
+      background: rgba(20, 80, 120, 0.5);
+      border-color: #2a7faa;
+    }
+
+    .badge {
+      background: #ffb347;
+      color: #0a1420;
+      font-size: 0.7rem;
+      border-radius: 40px;
+      padding: 0.2rem 0.7rem;
+      margin-left: 0.5rem;
+      font-weight: 700;
+    }
+
+    .viewport {
+      flex: 1;
+      background: rgba(5, 15, 25, 0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 2rem;
+      padding: 1.3rem;
+      border: 1px solid #2a5070;
+    }
+
+    .image-stage {
+      background: #0b1a28;
+      border-radius: 2rem;
+      overflow: hidden;
+      min-height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 1px #1f6480, 0 20px 35px -10px black;
+    }
+
+    canvas {
+      max-width: 100%;
+      max-height: 550px;
+      border-radius: 1.5rem;
+      display: block;
+    }
+
+    .insight-panel {
+      width: 290px;
+      background: rgba(8, 20, 32, 0.7);
+      backdrop-filter: blur(16px);
+      border-radius: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #347197;
+      box-shadow: inset 0 0 20px rgba(0,160,255,0.1);
+    }
+
+    .score-card {
+      background: rgba(16, 40, 60, 0.8);
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      text-align: center;
+      border: 1px solid #3b7b9f;
+    }
+
+    .score {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(145deg, #9adbff, #0891b2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed #295775;
+      padding: 0.7rem 0;
+    }
+
+    footer {
+      border-top: 1px solid #1e4a6b;
+      padding: 1.3rem 2rem;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      color: #90bcd4;
+    }
+    #themeToggle {
+      color: #7fc3ff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <div class="logo" data-tooltip="color vision laboratory">⚡CHROMO·VISION <span>sim</span></div>
+    <div class="tools-header">
+      <button class="btn" id="resetImageBtn" data-tooltip="revert original">↺ reset</button>
+      <button class="btn" id="removeImageBtn" data-tooltip="remove current">✕ remove</button>
+      <button class="btn btn-primary" id="daltonizeBtn" data-tooltip="apply daltonization">✨ daltonize</button>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <!-- left sidebar -->
+    <div class="sidebar">
+      <div class="upload-area" id="dropzone" data-tooltip="drag image here">
+        <div class="upload-icon">📀</div>
+        <p><strong>Upload image</strong><br><span style="opacity:0.7">PNG, JPG, WEBP, BMP</span></p>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
+      </div>
+      <div style="display:flex; gap:5px; margin:12px 0;">
+        <button class="btn" id="cameraBtn" style="flex:1;" data-tooltip="use camera">📸 camera</button>
+        <button class="btn" id="urlBtn" style="flex:1;" data-tooltip="load from URL">🔗 URL</button>
+      </div>
+      <!-- sample gallery with REAL images -->
+      <div class="sample-gallery" id="sampleGallery">
+        <div class="sample-thumb" data-sample="landscape" data-tooltip="landscape">🏞️</div>
+        <div class="sample-thumb" data-sample="portrait" data-tooltip="portrait">🧑</div>
+        <div class="sample-thumb" data-sample="chart" data-tooltip="chart">📊</div>
+        <div class="sample-thumb" data-sample="ui" data-tooltip="UI design">🎨</div>
+        <div class="sample-thumb" data-sample="logo" data-tooltip="logo">⭐</div>
+      </div>
+
+      <!-- CVD list -->
+      <div class="filter-group">
+        <h4 style="color:#b0e0ff;">🔬 CVD type</h4>
+        <div id="cvdList">
+          <label class="cvd-type" data-tooltip="normal vision"><input type="radio" name="cvd" value="normal" checked> 🌐 Normal</label>
+          <label class="cvd-type" data-tooltip="no red cones"><input type="radio" name="cvd" value="protanopia"> 🔴 Protanopia</label>
+          <label class="cvd-type" data-tooltip="no green cones"><input type="radio" name="cvd" value="deuteranopia"> 🟢 Deuteranopia</label>
+          <label class="cvd-type" data-tooltip="no blue cones"><input type="radio" name="cvd" value="tritanopia"> 🔵 Tritanopia</label>
+          <label class="cvd-type" data-tooltip="red weak"><input type="radio" name="cvd" value="protanomaly"> 🟠 Protanomaly</label>
+          <label class="cvd-type" data-tooltip="green weak, most common"><input type="radio" name="cvd" value="deuteranomaly"> 🟡 Deuteranomaly <span class="badge">common</span></label>
+          <label class="cvd-type" data-tooltip="blue weak"><input type="radio" name="cvd" value="tritanomaly"> 💠 Tritanomaly</label>
+          <label class="cvd-type" data-tooltip="total color blind"><input type="radio" name="cvd" value="rodMonochromacy"> ⚫ Rod mono</label>
+          <label class="cvd-type" data-tooltip="single cone type"><input type="radio" name="cvd" value="coneMonochromacy"> 🔘 Cone mono</label>
+        </div>
+      </div>
+      <!-- severity -->
+      <div style="margin:16px 0;">
+        <label>severity <span id="severityVal">100</span>%</label>
+        <input type="range" id="severitySlider" min="0" max="100" value="100" style="width:100%;">
+      </div>
+    </div>
+
+    <!-- center view -->
+    <div class="viewport">
+      <div class="image-stage" id="imageStage">
+        <canvas id="mainCanvas"></canvas>
+      </div>
+      <!-- color info -->
+      <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+        <span id="colorInfo" style="background:#0b1f2f; padding:6px 18px; border-radius:60px; border:1px solid #2d6080;">click for RGB</span>
+      </div>
+    </div>
+
+    <!-- right panel: score & colors -->
+    <div class="insight-panel">
+      <div class="score-card">
+        <div style="font-size:0.85rem;">accessibility score</div>
+        <div class="score" id="accessScore">0</div>
+      </div>
+      <!-- dominant colors -->
+      <div style="margin:1.2rem 0;">
+        <div style="display:flex; justify-content:space-between;">
+          <span>🎨 dominant colors</span>
+          <button class="btn" style="padding:2px 10px;" id="extractColorsBtn" data-tooltip="refresh palette">↻</button>
+        </div>
+        <div id="paletteContainer" style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;"></div>
+      </div>
+      <div class="stat-row"><span>👥 affected</span> <strong id="popAffected">0%</strong></div>
+      <div class="stat-row"><span>⚠️ confused</span> <strong id="confusedPairs">—</strong></div>
+      <div class="stat-row"><span>🎯 WCAG</span> <strong id="wcagContrast">—</strong></div>
+      <hr style="border-color:#23567a;">
+      <p id="eduFact" style="font-size:0.85rem;">🔬 select an image and CVD type</p>
+    </div>
+  </div>
+
+  <footer>
+    <span class="citation">📘 Viénot matrix · accurate simulation</span>
+    <span><a href="#" id="themeToggle">🌓 light / dark</a></span>
+  </footer>
+</div>
+
+<script>
+(function() {
+  // ------- accurate simulation matrices (Viénot/Brettel) -------
+  const CVD_MATRICES = {
+    protanopia:    [0.56667,0.43333,0, 0.55833,0.44167,0, 0.24167,0.75833,0],
+    deuteranopia:  [0.625,0.375,0, 0.7,0.3,0, 0.3,0.7,0],
+    tritanopia:    [1,0,0, 0,1,0, -0.1,0.1,0.9],
+    protanomaly:   [0.817,0.183,0, 0.333,0.667,0, 0,0.125,0.875],
+    deuteranomaly: [0.8,0.2,0, 0.258,0.742,0, 0,0.142,0.858],
+    tritanomaly:   [1,0,0, 0,1,0, 0,0.2,0.8],
+    rodMonochromacy: [0.2126,0.7152,0.0722, 0.2126,0.7152,0.0722, 0.2126,0.7152,0.0722],
+    coneMonochromacy: [0.333,0.333,0.333, 0.333,0.333,0.333, 0.333,0.333,0.333]
+  };
+
+  // daltonization (recolor for protanopia/deuteranopia)
+  function daltonizePixel(r,g,b) {
+    let lms2rgb = [5.472, -4.641, 0.1694, -1.125, 2.030, 0.0947, 0.1385, -0.2519, 1.113];
+    let rgb2lms = [0.390, 0.549, 0.061, 0.070, 0.963, 0.201, 0.019, 0.119, 0.949];
+    let l = rgb2lms[0]*r + rgb2lms[1]*g + rgb2lms[2]*b;
+    let m = rgb2lms[3]*r + rgb2lms[4]*g + rgb2lms[5]*b;
+    let s = rgb2lms[6]*r + rgb2lms[7]*g + rgb2lms[8]*b;
+    let l2 = 0, m2 = m, s2 = s; // protan shift
+    let r2 = lms2rgb[0]*l2 + lms2rgb[1]*m2 + lms2rgb[2]*s2;
+    let g2 = lms2rgb[3]*l2 + lms2rgb[4]*m2 + lms2rgb[5]*s2;
+    let b2 = lms2rgb[6]*l2 + lms2rgb[7]*m2 + lms2rgb[8]*s2;
+    let dr = r - r2, dg = g - g2, db = b - b2;
+    let adjR = r + 0.7*dr + 0.2*dg;
+    let adjG = g + 0.2*dg;
+    let adjB = b + 0.2*db;
+    return [Math.min(255,Math.max(0,adjR)), Math.min(255,Math.max(0,adjG)), Math.min(255,Math.max(0,adjB))];
+  }
+
+  function applyDaltonization(imageData) {
+    let data = imageData.data;
+    for (let i=0; i<data.length; i+=4) {
+      let [nr, ng, nb] = daltonizePixel(data[i], data[i+1], data[i+2]);
+      data[i] = nr; data[i+1] = ng; data[i+2] = nb;
+    }
+    return imageData;
+  }
+
+  function simulatePixels(imageData, matrixKey, severity=1.0) {
+    if (matrixKey==='normal') return imageData;
+    let mat = CVD_MATRICES[matrixKey];
+    if (!mat) return imageData;
+    let data = imageData.data;
+    for (let i=0; i<data.length; i+=4) {
+      let r=data[i], g=data[i+1], b=data[i+2];
+      let nr = mat[0]*r + mat[1]*g + mat[2]*b;
+      let ng = mat[3]*r + mat[4]*g + mat[5]*b;
+      let nb = mat[6]*r + mat[7]*g + mat[8]*b;
+      if (severity<1 && (matrixKey.includes('anomaly')||matrixKey.includes('chromacy'))) {
+        data[i]   = (1-severity)*r + severity*Math.min(255,Math.max(0,nr));
+        data[i+1] = (1-severity)*g + severity*Math.min(255,Math.max(0,ng));
+        data[i+2] = (1-severity)*b + severity*Math.min(255,Math.max(0,nb));
+      } else {
+        data[i]=Math.min(255,Math.max(0,nr));
+        data[i+1]=Math.min(255,Math.max(0,ng));
+        data[i+2]=Math.min(255,Math.max(0,nb));
+      }
+    }
+    return imageData;
+  }
+
+  // ----- state -----
+  let originalImage = null;
+  let originalCanvas = document.createElement('canvas');
+  let ctx = originalCanvas.getContext('2d');
+  const mainCanvas = document.getElementById('mainCanvas');
+  const mainCtx = mainCanvas.getContext('2d');
+  let currentCVD = 'normal';
+  let daltonizeMode = false;
+
+  // accessibility score calculation
+  function computeAccessibilityScore(imageData) {
+    if (!imageData) return 0;
+    let data = imageData.data;
+    let total = data.length/4;
+    if (total===0) return 0;
+    let colorSet = new Set();
+    for (let i=0; i<data.length; i+=20) {
+      let r = Math.round(data[i]/20)*20;
+      let g = Math.round(data[i+1]/20)*20;
+      let b = Math.round(data[i+2]/20)*20;
+      colorSet.add(`${r},${g},${b}`);
+    }
+    let distinct = colorSet.size;
+    let score = Math.min(100, Math.round(30 + distinct * 2.5));
+    return Math.min(100, Math.max(0, score));
+  }
+
+  function updateAccessibilityInfo() {
+    if (!originalImage) {
+      document.getElementById('accessScore').innerText = '0';
+      document.getElementById('popAffected').innerText = '0%';
+      document.getElementById('confusedPairs').innerText = '—';
+      document.getElementById('wcagContrast').innerText = '—';
+      return;
+    }
+    ctx.drawImage(originalImage,0,0, originalCanvas.width, originalCanvas.height);
+    let origData = ctx.getImageData(0,0,originalCanvas.width, originalCanvas.height);
+    let score = computeAccessibilityScore(origData);
+    document.getElementById('accessScore').innerText = score;
+    let affected = '8% men';
+    if (currentCVD.includes('tritan')) affected = '0.01%';
+    else if (currentCVD.includes('prot')) affected = '2% men';
+    else if (currentCVD.includes('deuter')) affected = '6% men';
+    document.getElementById('popAffected').innerText = affected;
+    document.getElementById('confusedPairs').innerText = (currentCVD.includes('prot')?'red/brown': currentCVD.includes('deuter')?'green/brown':'blue/yellow');
+    document.getElementById('wcagContrast').innerText = (score>70)?'good':'check';
+  }
+
+  function updateRendering() {
+    if (!originalImage) {
+      mainCtx.clearRect(0,0,mainCanvas.width,mainCanvas.height);
+      updateAccessibilityInfo();
+      return;
+    }
+    let severity = document.getElementById('severitySlider').value/100;
+    mainCanvas.width = originalImage.width;
+    mainCanvas.height = originalImage.height;
+    originalCanvas.width = originalImage.width;
+    originalCanvas.height = originalImage.height;
+    ctx.drawImage(originalImage, 0, 0);
+    let origData = ctx.getImageData(0,0,originalImage.width,originalImage.height);
+    let dataCopy = new ImageData(new Uint8ClampedArray(origData.data), origData.width, origData.height);
+
+    if (daltonizeMode) {
+      applyDaltonization(dataCopy);
+    } else {
+      if (currentCVD !== 'normal') simulatePixels(dataCopy, currentCVD, severity);
+    }
+    mainCtx.putImageData(dataCopy, 0, 0);
+    updateAccessibilityInfo();
+    extractDominantColors();
+  }
+
+  // extract 5 dominant colors
+  function extractDominantColors() {
+    if (!originalImage) {
+      document.getElementById('paletteContainer').innerHTML = '';
+      return;
+    }
+    ctx.drawImage(originalImage,0,0, originalCanvas.width, originalCanvas.height);
+    let data = ctx.getImageData(0,0, originalCanvas.width, originalCanvas.height).data;
+    let freq = {};
+    for (let i=0; i<data.length; i+=40) {
+      let r = Math.round(data[i]/20)*20;
+      let g = Math.round(data[i+1]/20)*20;
+      let b = Math.round(data[i+2]/20)*20;
+      let key = `${r},${g},${b}`;
+      freq[key] = (freq[key]||0)+1;
+    }
+    let sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    let paletteDiv = document.getElementById('paletteContainer');
+    paletteDiv.innerHTML = '';
+    sorted.forEach(entry => {
+      let [r,g,b] = entry[0].split(',').map(Number);
+      let swatch = document.createElement('div');
+      swatch.style.background = `rgb(${r},${g},${b})`;
+      swatch.style.width = '40px'; swatch.style.height = '40px';
+      swatch.style.borderRadius = '14px'; swatch.style.border = '2px solid #4080b0';
+      swatch.setAttribute('data-tooltip', `rgb(${r},${g},${b})`);
+      paletteDiv.appendChild(swatch);
+    });
+  }
+
+  // load image from src
+  function loadImageFromSrc(src) {
+    let img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { originalImage = img; daltonizeMode = false; updateRendering(); };
+    img.src = src;
+  }
+
+  // camera
+  document.getElementById('cameraBtn').addEventListener('click', async () => {
+    try {
+      let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      let video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      video.onloadeddata = () => {
+        let canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video,0,0);
+        canvas.toBlob(blob => loadImageFromSrc(URL.createObjectURL(blob)));
+        stream.getTracks().forEach(t => t.stop());
+      };
+    } catch { alert('Camera not accessible (use file upload)'); }
+  });
+
+  // URL
+  document.getElementById('urlBtn').addEventListener('click', () => {
+    let url = prompt('Enter image URL (CORS-permitting)');
+    if (url) loadImageFromSrc(url);
+  });
+
+  // drag & drop, file input
+  document.getElementById('dropzone').addEventListener('click', ()=>document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    if (e.target.files[0]) loadImageFromSrc(URL.createObjectURL(e.target.files[0]));
+  });
+  const dropzone = document.getElementById('dropzone');
+  ['dragenter','dragover','dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => e.preventDefault()));
+  dropzone.addEventListener('dragover', ()=>dropzone.classList.add('drag-over'));
+  dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) loadImageFromSrc(URL.createObjectURL(e.dataTransfer.files[0]));
+  });
+
+  // ---------- SAMPLE IMAGES: now realistic and distinct ----------
+  function generateLandscape() {
+    let canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 400;
+    let c = canvas.getContext('2d');
+    // sky gradient
+    let grad = c.createLinearGradient(0,0,0,400);
+    grad.addColorStop(0,'#87CEEB'); grad.addColorStop(0.6,'#98D8E8'); grad.addColorStop(1,'#c2b280');
+    c.fillStyle = grad; c.fillRect(0,0,600,400);
+    // sun
+    c.beginPath(); c.arc(500,80,50,0,2*Math.PI); c.fillStyle='#FFD700'; c.fill();
+    // mountains
+    c.fillStyle='#2E5A4C'; c.beginPath(); c.moveTo(0,250); c.lineTo(150,120); c.lineTo(280,200); c.lineTo(400,80); c.lineTo(550,180); c.lineTo(600,130); c.lineTo(600,400); c.lineTo(0,400); c.fill();
+    // trees
+    c.fillStyle='#228B22'; c.beginPath(); c.arc(80,320,20,0,2*Math.PI); c.fill();
+    c.fillStyle='#006400'; c.beginPath(); c.arc(120,300,25,0,2*Math.PI); c.fill();
+    return canvas;
+  }
+
+  function generatePortrait() {
+    let canvas = document.createElement('canvas'); canvas.width = 500; canvas.height = 500;
+    let c = canvas.getContext('2d');
+    c.fillStyle='#F2D2B6'; c.fillRect(0,0,500,500); // skin tone bg
+    // face
+    c.fillStyle='#E0AC69'; c.beginPath(); c.ellipse(250,200,120,150,0,0,2*Math.PI); c.fill();
+    // eyes
+    c.fillStyle='#FFFFFF'; c.beginPath(); c.arc(190,160,25,0,2*Math.PI); c.fill();
+    c.beginPath(); c.arc(310,160,25,0,2*Math.PI); c.fill();
+    c.fillStyle='#3B2F2F'; c.beginPath(); c.arc(190,160,12,0,2*Math.PI); c.fill();
+    c.beginPath(); c.arc(310,160,12,0,2*Math.PI); c.fill();
+    // mouth
+    c.beginPath(); c.strokeStyle='#B04F4F'; c.lineWidth=10; c.arc(250,240,50,0.2,1.8); c.stroke();
+    // shirt
+    c.fillStyle='#4169E1'; c.fillRect(150,320,200,180);
+    return canvas;
+  }
+
+  function generateChart() {
+    let canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 400;
+    let c = canvas.getContext('2d');
+    c.fillStyle='#FFFFFF'; c.fillRect(0,0,600,400);
+    // bar chart
+    c.fillStyle='#E63946'; c.fillRect(80,250,70,100);
+    c.fillStyle='#2A9D8F'; c.fillRect(200,150,70,200);
+    c.fillStyle='#E9C46A'; c.fillRect(320,180,70,170);
+    c.fillStyle='#F4A261'; c.fillRect(440,100,70,250);
+    // axes
+    c.strokeStyle='#000'; c.lineWidth=2; c.beginPath(); c.moveTo(50,50); c.lineTo(50,350); c.lineTo(550,350); c.stroke();
+    return canvas;
+  }
+
+  function generateUI() {
+    let canvas = document.createElement('canvas'); canvas.width = 500; canvas.height = 400;
+    let c = canvas.getContext('2d');
+    c.fillStyle='#F0F0F0'; c.fillRect(0,0,500,400);
+    // header
+    c.fillStyle='#2C3E50'; c.fillRect(0,0,500,60);
+    c.fillStyle='#ECF0F1'; c.font='bold 24px Inter'; c.fillText('App UI',20,40);
+    // card
+    c.fillStyle='#FFFFFF'; c.shadowBlur=10; c.shadowColor='#aaa'; c.fillRect(30,80,200,150);
+    c.fillStyle='#3498DB'; c.fillRect(40,100,180,30);
+    c.fillStyle='#2C3E50'; c.fillRect(40,140,180,30);
+    c.fillStyle='#E67E22'; c.fillRect(40,180,180,30);
+    // second card
+    c.fillStyle='#FFFFFF'; c.fillRect(260,80,200,150);
+    c.fillStyle='#9B59B6'; c.fillRect(270,100,180,30);
+    c.fillStyle='#2C3E50'; c.fillRect(270,140,180,30);
+    c.fillStyle='#1ABC9C'; c.fillRect(270,180,180,30);
+    c.shadowBlur=0;
+    return canvas;
+  }
+
+  function generateLogo() {
+    let canvas = document.createElement('canvas'); canvas.width = 400; canvas.height = 400;
+    let c = canvas.getContext('2d');
+    c.fillStyle='#1A1A2E'; c.fillRect(0,0,400,400);
+    c.fillStyle='#E94560'; c.beginPath(); c.arc(200,200,120,0,2*Math.PI); c.fill();
+    c.fillStyle='#0F3460'; c.beginPath(); c.arc(200,200,80,0,2*Math.PI); c.fill();
+    c.fillStyle='#F9D923'; c.font='bold 70px Inter'; c.fillText('CVD',130,250);
+    return canvas;
+  }
+
+  // attach sample clicks
+  document.querySelectorAll('.sample-thumb').forEach((el, idx) => {
+    el.addEventListener('click', () => {
+      let canvas;
+      switch(idx) {
+        case 0: canvas = generateLandscape(); break;
+        case 1: canvas = generatePortrait(); break;
+        case 2: canvas = generateChart(); break;
+        case 3: canvas = generateUI(); break;
+        case 4: canvas = generateLogo(); break;
+        default: canvas = generateLandscape();
+      }
+      canvas.toBlob(blob => loadImageFromSrc(URL.createObjectURL(blob)));
+    });
+  });
+
+  // radio
+  document.querySelectorAll('input[name="cvd"]').forEach(r => r.addEventListener('change', e => {
+    currentCVD = e.target.value; daltonizeMode = false; updateRendering();
+  }));
+  document.getElementById('severitySlider').addEventListener('input', (e) => {
+    document.getElementById('severityVal').innerText = e.target.value; updateRendering();
+  });
+
+  document.getElementById('daltonizeBtn').addEventListener('click', () => {
+    daltonizeMode = !daltonizeMode; updateRendering();
+  });
+
+  document.getElementById('extractColorsBtn').addEventListener('click', extractDominantColors);
+
+  // reset / remove
+  document.getElementById('resetImageBtn').addEventListener('click', () => { daltonizeMode = false; updateRendering(); });
+  document.getElementById('removeImageBtn').addEventListener('click', () => {
+    originalImage = null; mainCtx.clearRect(0,0,mainCanvas.width,mainCanvas.height);
+    updateAccessibilityInfo();
+    document.getElementById('paletteContainer').innerHTML = '';
+    document.getElementById('colorInfo').innerText = 'click for RGB';
+  });
+
+  // color picker
+  mainCanvas.addEventListener('click', (e) => {
+    if (!originalImage) return;
+    let rect = mainCanvas.getBoundingClientRect();
+    let x = Math.floor((e.clientX-rect.left) * (mainCanvas.width/rect.width));
+    let y = Math.floor((e.clientY-rect.top) * (mainCanvas.height/rect.height));
+    let pixel = mainCtx.getImageData(x,y,1,1).data;
+    document.getElementById('colorInfo').innerHTML = `RGB: (${pixel[0]},${pixel[1]},${pixel[2]})`;
+  });
+
+  // light/dark toggle
+  document.getElementById('themeToggle').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.body.classList.toggle('light');
+  });
+
+  // initial image (landscape)
+  generateLandscape().toBlob(blob => loadImageFromSrc(URL.createObjectURL(blob)));
+})();
+</script>
+</body>
+</html>
